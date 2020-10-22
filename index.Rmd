@@ -1,0 +1,274 @@
+---
+title: "BOTR Fall 2020"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r setup 1, include=FALSE}
+library(tidyverse)
+library(rio)
+library(here)
+library(colorblindr)
+library(gghighlight)
+library(forcats)
+library(ggrepel)
+library(gt)
+library(knitr)
+library(kableExtra)
+library(reactable)
+library(plotly)
+library(SCVA)
+library(patchwork)
+
+
+theme_set(theme_minimal(15) +
+            theme(legend.position = "bottom",
+                  panel.grid.major.x = element_line(color = "gray60"),
+                  panel.grid.minor.x = element_blank(),
+                  panel.grid.major.y = element_blank())
+          )
+
+brief_self <- import(here("data", "BOTR_brief_self.xlsx"),
+               setclass = "tbl_df") 
+
+brief_inform <- import(here("data", "BOTR_brief_informant.xlsx"),
+               setclass = "tbl_df") 
+
+pcss <- import(here("data", "BOTR_pcss.xlsx"),
+               setclass = "tbl_df") 
+
+```
+
+```{r, include=FALSE}
+make_color_pal <- function(colors, bias = 1) {
+  get_color <- colorRamp(colors, bias = bias)
+  function(x) rgb(get_color(x), maxColorValue = 255)
+}
+
+good_color <- make_color_pal(c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"), bias = 2)
+
+
+seq(0.1, 0.9, length.out = 12)
+
+good_color(seq(0.1, 0.9, length.out = 12))
+
+
+seq(0.1, 0.9, length.out = 12) %>% 
+  good_color() %>% 
+  scales::show_col()
+
+```
+
+
+## BRIEF-A  {.tabset .tabset-fade .tabset-pills}
+
+### Self-Report
+
+```{r, include=FALSE}
+brief_tbl <- function(df) {
+  df %>% 
+  reactable(
+    columns = list(
+      `Scale/Index` = colDef(align = "center"),
+      `Raw Score` = colDef(name = "Raw Score",
+                           align = "center"),
+      `T-Score` = colDef(name = "T-Score",
+                         align = "center"),
+      `Percentile Rank` = colDef(name = "Percentile Rank",
+                                align = "center")),
+    pagination = FALSE,
+    striped = TRUE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE,
+    #searchable = TRUE,
+    height = 600,
+    width = 500)
+}
+
+brief_tbl(brief_self)
+
+brief_self_tbl <- brief_self %>% 
+  reactable(
+    columns = list(
+      `Scale/Index` = colDef(align = "center"),
+      `Raw Score` = colDef(name = "Raw Score",
+                           align = "center"),
+      `T-Score` = colDef(name = "T-Score",
+                         align = "center",
+                         style = function(value) {
+                           value
+                           normalized <- (value - min(brief_self$`T-Score`)) / (max(brief_self$`T-Score`) - min(brief_self$`T-Score`))
+                           color <- good_color(normalized)
+                           list(background = color)
+                         }),
+      `Percentile Rank` = colDef(name = "Percentile Rank",
+                                align = "center",
+                                style = function(value) {
+                           value
+                           normalized <- (value - min(brief_self$`Percentile Rank`)) / (max(brief_self$`Percentile Rank`) - min(brief_self$`Percentile Rank`))
+                           color <- good_color(normalized)
+                           list(background = color)
+                         })),
+    pagination = FALSE,
+    striped = FALSE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = FALSE,
+    #searchable = TRUE,
+    height = 600,
+    width = 500)
+```
+
+
+```{r, include=TRUE, fig.height=8, fig.width=10}
+brief_self_tbl
+```
+
+### Informant Report 
+
+```{r, include=FALSE}
+
+brief_inform_tbl <- brief_inform %>% 
+  reactable(
+    columns = list(
+      `Scale/Index` = colDef(align = "center"),
+      `Raw Score` = colDef(name = "Raw Score",
+                           align = "center"),
+      `T-Score` = colDef(name = "T-Score",
+                         align = "center",
+                         style = function(value) {
+                           value
+                           normalized <- (value - min(brief_inform$`T-Score`)) / (max(brief_inform$`T-Score`) - min(brief_inform$`T-Score`))
+                           color <- good_color(normalized)
+                           list(background = color)
+                         }),
+      `Percentile Rank` = colDef(name = "Percentile Rank",
+                                align = "center",
+                                style = function(value) {
+                           value
+                           normalized <- (value - min(brief_inform$`Percentile Rank`)) / (max(brief_inform$`Percentile Rank`) - min(brief_inform$`Percentile Rank`))
+                           color <- good_color(normalized)
+                           list(background = color)
+                         })),
+    pagination = FALSE,
+    striped = FALSE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = FALSE,
+    #searchable = TRUE,
+    height = 600,
+    width = 500)
+```
+
+
+```{r, include=TRUE, fig.height=8, fig.width=10}
+brief_inform_tbl
+```
+
+
+## PCSS {.tabset .tabset-fade .tabset-pills}
+
+```{r, include=FALSE}
+head(pcss)
+
+orange_pal <- function(x) rgb(colorRamp(c("#ffe4cc", "#ffb54d"))(x), maxColorValue = 255)
+
+pcss_table <- pcss %>% 
+  reactable(
+    columns = list(
+      Symptom = colDef(align = "center"),
+      `Pre Treatment` = colDef(name = "Pre Treatment",
+                                    align = "center"),
+      `Post Treatment` = colDef(name = "Post Treatment",
+                                align = "center")),
+    pagination = FALSE,
+    striped = TRUE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE,
+    searchable = TRUE,
+    height = 600,
+    width = 500)
+
+
+pcss_items <- pcss[1:22, ]
+pcss_total_cluster <- pcss[23:29, ]
+
+pcss_items_tbl <- pcss_items %>% 
+  reactable(
+    columns = list(
+      Symptom = colDef(align = "center"),
+      `Pre Treatment` = colDef(name = "Pre Treatment",
+                                    align = "center",
+                                    style = function(value) {
+                                      normalized <- (value - min(pcss_items$`Pre Treatment`)) / (max(pcss_items$`Pre Treatment` - min(pcss_items$`Pre Treatment`)))
+                                      color <- orange_pal(normalized)
+                                      list(background = color)
+                                    }),
+      `Post Treatment` = colDef(name = "Post Treatment",
+                                align = "center")),
+    pagination = FALSE,
+    striped = FALSE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE,
+    searchable = TRUE,
+    height = 600,
+    width = 500)
+
+pcss_cluster_tbl <- pcss_total_cluster %>% 
+  reactable(
+    columns = list(
+      Symptom = colDef(align = "center"),
+      `Pre Treatment` = colDef(name = "Pre Treatment",
+                                    align = "center",
+                                    style = function(value) {
+                                      normalized <- (value - min(pcss_total_cluster$`Pre Treatment`)) / (max(pcss_total_cluster$`Pre Treatment` - min(pcss_total_cluster$`Pre Treatment`)))
+                                      color <- orange_pal(normalized)
+                                      list(background = color)
+                                    }),
+      `Post Treatment` = colDef(name = "Post Treatment",
+                                align = "center")),
+    pagination = FALSE,
+    striped = FALSE,
+    outlined = TRUE,
+    compact = TRUE,
+    highlight = TRUE,
+    bordered = TRUE,
+    searchable = TRUE,
+    height = 600,
+    width = 500)
+
+```
+
+### All Scores
+
+```{r pcss table, include=TRUE, fig.height=8}
+pcss_table
+```
+
+### Symptom Scores
+
+```{r, include=TRUE, fig.height=8}
+pcss_items_tbl
+```
+
+### Total and Cluster Scores
+
+```{r, include=TRUE, fig.height=8}
+pcss_cluster_tbl
+```
